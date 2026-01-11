@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signature Lab</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 850px;
+            height: 95vh;
+            max-height: 850px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+        
+        .developer {
+            color: #ecf0f1;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .controls {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            border-bottom: 2px solid #e9ecef;
+            flex-shrink: 0;
+        }
+        
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            min-width: 100px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        
+        .btn:active {
+            transform: translateY(-1px);
+        }
+        
+        .btn-clear {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .btn-undo {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .btn-redo {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-crop {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .btn-download {
+            background: #9b59b6;
+            color: white;
+        }
+        
+        .btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 8px;
+            background: #34495e;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+        
+        .canvas-area {
+            position: relative;
+            flex: 1;
+            background: white;
+            overflow: hidden;
+            margin: 10px;
+            border: 2px solid #ddd; /* Light black border */
+        }
+        
+        #signatureCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            touch-action: none;
+        }
+        
+        .crop-selection {
+            position: absolute;
+            border: 3px dashed #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+            z-index: 10;
+            display: none;
+            pointer-events: none;
+        }
+        
+        .instructions {
+            padding: 15px;
+            background: #f8f9fa;
+            border-top: 2px solid #e9ecef;
+            flex-shrink: 0;
+        }
+        
+        .instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 1rem;
+        }
+        
+        .steps {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .step {
+            flex: 1;
+            min-width: 180px;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .step-number {
+            display: inline-block;
+            width: 25px;
+            height: 25px;
+            background: #3498db;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 25px;
+            margin-right: 8px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .step h4 {
+            display: inline;
+            color: #2c3e50;
+            font-size: 0.9rem;
+        }
+        
+        .step p {
+            margin-top: 8px;
+            color: #7f8c8d;
+            line-height: 1.4;
+            font-size: 0.8rem;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                height: 90vh;
+                max-height: 700px;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .btn {
+                min-width: 90px;
+                padding: 8px 12px;
+                font-size: 0.85rem;
+            }
+            
+            .steps {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .step {
+                min-width: 100%;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                height: 85vh;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 250px;
+            }
+            
+            .canvas-area {
+                margin: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>SIGNATURE LAB</h1>
+            <p class="developer">Developed by SURESH SUTHAR</p>
+        </div>
+        
+        <div class="controls">
+            <button id="clearBtn" class="btn btn-clear">Clear</button>
+            <button id="undoBtn" class="btn btn-undo" disabled>Undo</button>
+            <button id="redoBtn" class="btn btn-redo" disabled>Redo</button>
+            <button id="cropBtn" class="btn btn-crop">Crop</button>
+            <button id="downloadBtn" class="btn btn-download" disabled>Download JPEG</button>
+        </div>
+        
+        <div class="status" id="status">Draw your signature using mouse or touch</div>
+        
+        <div class="canvas-area">
+            <canvas id="signatureCanvas">Your browser does not support canvas</canvas>
+            <div id="cropSelection" class="crop-selection"></div>
+        </div>
+        
+        <div class="instructions">
+            <h3>How to Use Signature Lab</h3>
+            <div class="steps">
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <h4>Draw</h4>
+                    <p>Draw your signature inside the bordered area using mouse or touch.</p>
+                </div>
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <h4>Crop</h4>
+                    <p>Click "Crop" button, then drag to select the area you want to keep.</p>
+                </div>
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <h4>Download</h4>
+                    <p>Click "Download JPEG" to save your signature (cropped or full).</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get canvas and context
+        const canvas = document.getElementById('signatureCanvas');
+        const ctx = canvas.getContext('2d');
+        const cropSelection = document.getElementById('cropSelection');
+        
+        // Buttons
+        const clearBtn = document.getElementById('clearBtn');
+        const undoBtn = document.getElementById('undoBtn');
+        const redoBtn = document.getElementById('redoBtn');
+        const cropBtn = document.getElementById('cropBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const status = document.getElementById('status');
+        
+        // Drawing state
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let isCropping = false;
+        let cropStartX = 0;
+        let cropStartY = 0;
+        
+        // Crop state
+        let cropData = null;
+        let isCropActive = false;
+        
+        // Drawing history for undo/redo
+        let drawingHistory = [];
+        let currentHistoryIndex = -1;
+        
+        // Initialize canvas
+        function initCanvas() {
+            const container = canvas.parentElement;
+            const dpr = window.devicePixelRatio || 1;
+            const rect = container.getBoundingClientRect();
+            
+            // Set canvas size considering device pixel ratio for sharp drawing
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+            
+            // Scale context for high DPI displays
+            ctx.scale(dpr, dpr);
+            
+            // Set white background
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, rect.width, rect.height);
+            
+            // Set drawing styles
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = 'black';
+            
+            // Save initial state to history
+            saveToHistory();
+            
+            updateStatus('Draw your signature inside the bordered area');
+        }
+        
+        // Save current canvas state
+        function saveToHistory() {
+            // Remove any redo steps
+            if (currentHistoryIndex < drawingHistory.length - 1) {
+                drawingHistory = drawingHistory.slice(0, currentHistoryIndex + 1);
+            }
+            
+            // Save current state
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            drawingHistory.push(imageData);
+            currentHistoryIndex++;
+            
+            // Update buttons
+            updateUndoRedoButtons();
+        }
+        
+        // Update undo/redo button states
+        function updateUndoRedoButtons() {
+            undoBtn.disabled = currentHistoryIndex <= 0;
+            redoBtn.disabled = currentHistoryIndex >= drawingHistory.length - 1;
+        }
+        
+        // Undo last action
+        function undo() {
+            if (currentHistoryIndex > 0) {
+                currentHistoryIndex--;
+                const imageData = drawingHistory[currentHistoryIndex];
+                ctx.putImageData(imageData, 0, 0);
+                updateUndoRedoButtons();
+                updateStatus('Undo performed');
+            }
+        }
+        
+        // Redo last undone action
+        function redo() {
+            if (currentHistoryIndex < drawingHistory.length - 1) {
+                currentHistoryIndex++;
+                const imageData = drawingHistory[currentHistoryIndex];
+                ctx.putImageData(imageData, 0, 0);
+                updateUndoRedoButtons();
+                updateStatus('Redo performed');
+            }
+        }
+        
+        // Clear canvas
+        function clearCanvas() {
+            // Reset crop state
+            isCropActive = false;
+            cropData = null;
+            isCropping = false;
+            cropSelection.style.display = 'none';
+            
+            // Get current canvas dimensions
+            const rect = canvas.parentElement.getBoundingClientRect();
+            
+            // Clear with white background
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, rect.width, rect.height);
+            
+            // Reset drawing state
+            isDrawing = false;
+            lastX = 0;
+            lastY = 0;
+            
+            // Reset crop button
+            cropBtn.style.background = '#27ae60';
+            
+            // Save to history
+            saveToHistory();
+            downloadBtn.disabled = true;
+            updateStatus('Canvas cleared. Draw your signature inside the bordered area.');
+        }
+        
+        // Get mouse position relative to canvas
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            let clientX, clientY;
+            
+            if (e.type.includes('touch')) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            
+            // Calculate coordinates considering canvas scaling
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            return [
+                (clientX - rect.left) * scaleX,
+                (clientY - rect.top) * scaleY
+            ];
+        }
+        
+        // Start drawing
+        function startDrawing(e) {
+            if (isCropping) return;
+            
+            isDrawing = true;
+            [lastX, lastY] = getMousePos(e);
+            
+            // Start new path at the exact point
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+        }
+        
+        // Draw on canvas
+        function draw(e) {
+            if (!isDrawing || isCropping) return;
+            
+            const [x, y] = getMousePos(e);
+            
+            // Draw line from last point to current point
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            
+            // Update last position
+            [lastX, lastY] = [x, y];
+        }
+        
+        // Stop drawing
+        function stopDrawing() {
+            if (isDrawing) {
+                isDrawing = false;
+                saveToHistory();
+                downloadBtn.disabled = false;
+                updateStatus('Signature drawn. Ready for crop or download.');
+            }
+        }
+        
+        // Start crop mode
+        function startCropMode() {
+            isCropping = true;
+            cropSelection.style.display = 'block';
+            cropBtn.style.background = '#d35400';
+            
+            updateStatus('Drag to select crop area, then click Download JPEG');
+        }
+        
+        // Start crop selection
+        function startCropSelection(e) {
+            if (!isCropping) return;
+            
+            e.preventDefault();
+            [cropStartX, cropStartY] = getMousePos(e);
+            
+            // Convert to display coordinates
+            const rect = canvas.getBoundingClientRect();
+            const displayX = (cropStartX / canvas.width) * rect.width;
+            const displayY = (cropStartY / canvas.height) * rect.height;
+            
+            // Reset crop selection
+            cropSelection.style.left = displayX + 'px';
+            cropSelection.style.top = displayY + 'px';
+            cropSelection.style.width = '0px';
+            cropSelection.style.height = '0px';
+            
+            // Add event listeners for dragging
+            document.addEventListener('mousemove', resizeCropSelection);
+            document.addEventListener('mouseup', stopCropSelection);
+            
+            // For touch devices
+            document.addEventListener('touchmove', resizeCropSelection, { passive: false });
+            document.addEventListener('touchend', stopCropSelection);
+        }
+        
+        // Resize crop selection while dragging
+        function resizeCropSelection(e) {
+            if (!isCropping) return;
+            
+            e.preventDefault();
+            const [currentX, currentY] = getMousePos(e);
+            
+            // Convert to display coordinates
+            const rect = canvas.getBoundingClientRect();
+            const displayCurrentX = (currentX / canvas.width) * rect.width;
+            const displayCurrentY = (currentY / canvas.height) * rect.height;
+            const displayStartX = (cropStartX / canvas.width) * rect.width;
+            const displayStartY = (cropStartY / canvas.height) * rect.height;
+            
+            const width = displayCurrentX - displayStartX;
+            const height = displayCurrentY - displayStartY;
+            
+            cropSelection.style.width = Math.abs(width) + 'px';
+            cropSelection.style.height = Math.abs(height) + 'px';
+            
+            // Adjust position for negative dimensions
+            if (width < 0) {
+                cropSelection.style.left = displayCurrentX + 'px';
+            }
+            if (height < 0) {
+                cropSelection.style.top = displayCurrentY + 'px';
+            }
+        }
+        
+        // Stop crop selection
+        function stopCropSelection() {
+            if (!isCropping) return;
+            
+            // Remove event listeners
+            document.removeEventListener('mousemove', resizeCropSelection);
+            document.removeEventListener('mouseup', stopCropSelection);
+            document.removeEventListener('touchmove', resizeCropSelection);
+            document.removeEventListener('touchend', stopCropSelection);
+            
+            // Store crop data immediately
+            storeCropData();
+        }
+        
+        // Store crop data
+        function storeCropData() {
+            const cropRect = cropSelection.getBoundingClientRect();
+            const canvasRect = canvas.getBoundingClientRect();
+            
+            // Calculate crop coordinates in canvas pixels
+            const scaleX = canvas.width / canvasRect.width;
+            const scaleY = canvas.height / canvasRect.height;
+            
+            const x = (cropRect.left - canvasRect.left) * scaleX;
+            const y = (cropRect.top - canvasRect.top) * scaleY;
+            const width = cropRect.width * scaleX;
+            const height = cropRect.height * scaleY;
+            
+            // Ensure minimum dimensions
+            if (width > 10 && height > 10) {
+                cropData = { x, y, width, height };
+                isCropActive = true;
+                updateStatus('Crop area selected. Click Download JPEG to save only the cropped area.');
+            } else {
+                updateStatus('Crop area too small. Please select a larger area.');
+            }
+        }
+        
+        // Download signature as JPEG
+        function downloadSignature() {
+            let tempCanvas;
+            
+            if (isCropActive && cropData) {
+                // Download only the cropped area
+                const { x, y, width, height } = cropData;
+                
+                // Create temporary canvas for cropped area
+                tempCanvas = document.createElement('canvas');
+                tempCanvas.width = width;
+                tempCanvas.height = height;
+                const tempCtx = tempCanvas.getContext('2d');
+                
+                // Fill with white background
+                tempCtx.fillStyle = 'white';
+                tempCtx.fillRect(0, 0, width, height);
+                
+                // Draw the cropped area
+                tempCtx.drawImage(canvas, x, y, width, height, 0, 0, width, height);
+                
+                updateStatus('Downloading cropped signature as JPEG...');
+                
+                // Reset crop state after download
+                isCropActive = false;
+                cropData = null;
+                isCropping = false;
+                cropSelection.style.display = 'none';
+                cropBtn.style.background = '#27ae60';
+            } else {
+                // Download entire canvas
+                tempCanvas = document.createElement('canvas');
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+                const tempCtx = tempCanvas.getContext('2d');
+                
+                // Fill with white background
+                tempCtx.fillStyle = 'white';
+                tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                
+                // Draw the signature
+                tempCtx.drawImage(canvas, 0, 0);
+                
+                updateStatus('Downloading entire signature as JPEG...');
+            }
+            
+            // Create download link
+            const link = document.createElement('a');
+            link.download = 'signature_' + new Date().getTime() + '.jpeg';
+            link.href = tempCanvas.toDataURL('image/jpeg', 1.0);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            updateStatus('Signature downloaded as JPEG!');
+        }
+        
+        // Update status message
+        function updateStatus(message) {
+            status.textContent = message;
+        }
+        
+        // Event Listeners
+        canvas.addEventListener('mousedown', function(e) {
+            if (isCropping) {
+                startCropSelection(e);
+            } else {
+                startDrawing(e);
+            }
+        });
+        
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+        
+        // Touch events
+        canvas.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            if (isCropping) {
+                startCropSelection(e);
+            } else {
+                startDrawing(e);
+            }
+        });
+        
+        canvas.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            if (!isCropping) {
+                draw(e);
+            }
+        });
+        
+        canvas.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            if (!isCropping) {
+                stopDrawing();
+            }
+        });
+        
+        // Button events
+        clearBtn.addEventListener('click', clearCanvas);
+        undoBtn.addEventListener('click', undo);
+        redoBtn.addEventListener('click', redo);
+        cropBtn.addEventListener('click', startCropMode);
+        downloadBtn.addEventListener('click', downloadSignature);
+        
+        // Initialize on load
+        window.addEventListener('load', initCanvas);
+        
+        // Handle window resize
+        let resizeTimeout;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(initCanvas, 250);
+        });
+        
+        // Prevent scrolling and context menu
+        document.addEventListener('wheel', function(e) {
+            if (e.target === canvas) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    </script>
+</body>
+</html>
