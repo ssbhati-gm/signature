@@ -122,6 +122,77 @@
             box-shadow: none;
         }
         
+        /* Thickness Controls */
+        .thickness-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: 10px;
+        }
+        
+        .thickness-label {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 0.9rem;
+        }
+        
+        .thickness-options {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .thickness-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background: white;
+            transition: all 0.2s;
+        }
+        
+        .thickness-btn:hover {
+            border-color: #3498db;
+        }
+        
+        .thickness-btn.active {
+            border-color: #2c3e50;
+            background: #f0f0f0;
+        }
+        
+        .thickness-indicator {
+            background: black;
+            border-radius: 50%;
+        }
+        
+        .thickness-1 .thickness-indicator {
+            width: 4px;
+            height: 4px;
+        }
+        
+        .thickness-2 .thickness-indicator {
+            width: 8px;
+            height: 8px;
+        }
+        
+        .thickness-3 .thickness-indicator {
+            width: 12px;
+            height: 12px;
+        }
+        
+        .thickness-4 .thickness-indicator {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .thickness-5 .thickness-indicator {
+            width: 20px;
+            height: 20px;
+        }
+        
         .status {
             text-align: center;
             padding: 8px;
@@ -233,6 +304,13 @@
                 font-size: 0.85rem;
             }
             
+            .thickness-controls {
+                margin-left: 0;
+                margin-top: 5px;
+                width: 100%;
+                justify-content: center;
+            }
+            
             .steps {
                 flex-direction: column;
                 gap: 10px;
@@ -277,6 +355,27 @@
             <button id="redoBtn" class="btn btn-redo" disabled>Redo</button>
             <button id="cropBtn" class="btn btn-crop">Crop</button>
             <button id="downloadBtn" class="btn btn-download" disabled>Download JPEG</button>
+            
+            <div class="thickness-controls">
+                <span class="thickness-label">Thickness:</span>
+                <div class="thickness-options">
+                    <div class="thickness-btn thickness-1" data-thickness="1">
+                        <div class="thickness-indicator"></div>
+                    </div>
+                    <div class="thickness-btn thickness-2" data-thickness="2">
+                        <div class="thickness-indicator"></div>
+                    </div>
+                    <div class="thickness-btn thickness-3 active" data-thickness="3">
+                        <div class="thickness-indicator"></div>
+                    </div>
+                    <div class="thickness-btn thickness-4" data-thickness="4">
+                        <div class="thickness-indicator"></div>
+                    </div>
+                    <div class="thickness-btn thickness-5" data-thickness="5">
+                        <div class="thickness-indicator"></div>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <div class="status" id="status">Draw your signature using mouse or touch</div>
@@ -322,6 +421,9 @@
         const downloadBtn = document.getElementById('downloadBtn');
         const status = document.getElementById('status');
         
+        // Thickness buttons
+        const thicknessBtns = document.querySelectorAll('.thickness-btn');
+        
         // Drawing state
         let isDrawing = false;
         let lastX = 0;
@@ -329,6 +431,7 @@
         let isCropping = false;
         let cropStartX = 0;
         let cropStartY = 0;
+        let currentThickness = 3; // CHANGED: Default thickness is now 3 (third point)
         
         // Crop state
         let cropData = null;
@@ -358,15 +461,44 @@
             ctx.fillRect(0, 0, rect.width, rect.height);
             
             // Set drawing styles
-            ctx.lineWidth = 2;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.strokeStyle = 'black';
+            updateDrawingStyle();
             
             // Save initial state to history
             saveToHistory();
             
             updateStatus('Draw your signature inside the bordered area');
+        }
+        
+        // Update drawing style based on current thickness
+        function updateDrawingStyle() {
+            // Map thickness value to actual line width
+            const thicknessMap = {
+                1: 1,
+                2: 2,
+                3: 4, // CHANGED: Thickness 3 is now 4px (medium line)
+                4: 6,
+                5: 8
+            };
+            
+            ctx.lineWidth = thicknessMap[currentThickness] || 4; // CHANGED: Default to 4px
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = 'black';
+        }
+        
+        // Set thickness
+        function setThickness(thickness) {
+            currentThickness = thickness;
+            updateDrawingStyle();
+            
+            // Update active button
+            thicknessBtns.forEach(btn => {
+                if (parseInt(btn.getAttribute('data-thickness')) === thickness) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
         }
         
         // Save current canvas state
@@ -709,6 +841,14 @@
         redoBtn.addEventListener('click', redo);
         cropBtn.addEventListener('click', startCropMode);
         downloadBtn.addEventListener('click', downloadSignature);
+        
+        // Thickness button events
+        thicknessBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const thickness = parseInt(this.getAttribute('data-thickness'));
+                setThickness(thickness);
+            });
+        });
         
         // Initialize on load
         window.addEventListener('load', initCanvas);
