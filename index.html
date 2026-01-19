@@ -784,13 +784,13 @@
             
             // Create download link
             const link = document.createElement('a');
-            link.download = 'signature_' + new Date().getTime() + '.jpeg';
+            link.download = 'sign.jpeg';  // Changed from timestamped name to "sign.jpeg"
             link.href = tempCanvas.toDataURL('image/jpeg', 1.0);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             
-            updateStatus('Signature downloaded as JPEG!');
+            updateStatus('Signature downloaded as sign.jpeg!');
         }
         
         // Update status message
