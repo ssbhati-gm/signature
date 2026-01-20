@@ -633,13 +633,85 @@
             }
         }
         
+        // Find the boundaries of the signature
+        function findSignatureBounds() {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            let minX = canvas.width;
+            let minY = canvas.height;
+            let maxX = 0;
+            let maxY = 0;
+            
+            // Scan for non-white pixels (signature pixels)
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    const index = (y * canvas.width + x) * 4;
+                    // Check if pixel is not white (R, G, B are not all 255)
+                    if (data[index] !== 255 || data[index + 1] !== 255 || data[index + 2] !== 255) {
+                        // Add some tolerance for anti-aliasing
+                        const brightness = (data[index] + data[index + 1] + data[index + 2]) / 3;
+                        if (brightness < 250) { // If pixel is significantly not white
+                            if (x < minX) minX = x;
+                            if (x > maxX) maxX = x;
+                            if (y < minY) minY = y;
+                            if (y > maxY) maxY = y;
+                        }
+                    }
+                }
+            }
+            
+            // If no signature found, return null
+            if (minX > maxX || minY > maxY) {
+                return null;
+            }
+            
+            // Add some padding around the signature
+            const padding = 25 * (canvas.width / canvas.parentElement.getBoundingClientRect().width);
+            minX = Math.max(0, minX - padding);
+            minY = Math.max(0, minY - padding);
+            maxX = Math.min(canvas.width, maxX + padding);
+            maxY = Math.min(canvas.height, maxY + padding);
+            
+            return {
+                x: minX,
+                y: minY,
+                width: maxX - minX,
+                height: maxY - minY
+            };
+        }
+        
         // Start crop mode
         function startCropMode() {
             isCropping = true;
             cropSelection.style.display = 'block';
             cropBtn.style.background = '#d35400';
             
-            updateStatus('Drag to select crop area, then click Download JPEG');
+            // First try to auto-detect signature bounds
+            const bounds = findSignatureBounds();
+            
+            if (bounds) {
+                // Convert canvas coordinates to display coordinates
+                const rect = canvas.getBoundingClientRect();
+                const displayX = (bounds.x / canvas.width) * rect.width;
+                const displayY = (bounds.y / canvas.height) * rect.height;
+                const displayWidth = (bounds.width / canvas.width) * rect.width;
+                const displayHeight = (bounds.height / canvas.height) * rect.height;
+                
+                // Set crop selection to auto-detected bounds
+                cropSelection.style.left = displayX + 'px';
+                cropSelection.style.top = displayY + 'px';
+                cropSelection.style.width = displayWidth + 'px';
+                cropSelection.style.height = displayHeight + 'px';
+                
+                // Store crop data
+                cropData = bounds;
+                isCropActive = true;
+                
+                updateStatus('Auto-crop applied to signature. Drag to adjust or click Download JPEG.');
+            } else {
+                updateStatus('No signature detected. Drag to select crop area manually.');
+            }
         }
         
         // Start crop selection
